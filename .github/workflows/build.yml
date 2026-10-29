@@ -64,7 +64,8 @@ jobs:
           done
           dpkg-deb --root-owner-group -b "$root" "${NAME}_${VERSION}_all.deb"
           # dkms add is a no-op without this file
-          dpkg-deb -c "${NAME}_${VERSION}_all.deb" | grep -q 'dkms.conf$'
+          dpkg-deb -c "${NAME}_${VERSION}_all.deb" > /tmp/list
+          grep -q 'dkms.conf$' /tmp/list
       - uses: actions/upload-artifact@v4
         with:
           name: deb
@@ -89,7 +90,8 @@ jobs:
           sed "s/@PKGVER@/$VERSION/" "packaging/rpm/$NAME.spec.in" > "rpmbuild/SPECS/$NAME.spec"
           rpmbuild -bb --define "_topdir $PWD/rpmbuild" "rpmbuild/SPECS/$NAME.spec"
           # the template token must not survive into the package
-          mkdir -p /tmp/x && rpm2cpio rpmbuild/RPMS/noarch/*.rpm | (cd /tmp/x && cpio -idm --quiet)
+          mkdir -p /tmp/x && rpm2cpio rpmbuild/RPMS/noarch/*.rpm > /tmp/x.cpio
+          (cd /tmp/x && cpio -idm --quiet < /tmp/x.cpio)
           ! grep -q '@VERSION@' /tmp/x/usr/src/*/dkms.conf
       - uses: actions/upload-artifact@v4
         with:
@@ -119,7 +121,8 @@ jobs:
           cp packaging/arch/rtw89-custom.install .
           su builder -c "cd '$PWD' && makepkg -f --noconfirm"
           # the template token must not survive into the package
-          ! tar --zstd -xOf ./*.pkg.tar.zst usr/src/*/dkms.conf | grep -q '@VERSION@'
+          tar --zstd -xOf ./*.pkg.tar.zst usr/src/*/dkms.conf > /tmp/dkms.conf
+          ! grep -q '@VERSION@' /tmp/dkms.conf
       - uses: actions/upload-artifact@v4
         with:
           name: arch
