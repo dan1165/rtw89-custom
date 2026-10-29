@@ -94,7 +94,8 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
-      - run: pacman -Sy --noconfirm --needed base-devel
+      # makepkg only checks deps, it does not install them
+      - run: pacman -Sy --noconfirm --needed base-devel dkms linux-headers
       - uses: actions/checkout@v4
       - run: echo "VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
