@@ -145,6 +145,8 @@ jobs:
     needs: [deb, rpm, arch, exe]
     runs-on: ubuntu-latest
     steps:
+      # checkout gives VERSION and the git context gh needs
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -166,4 +168,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${{ steps.tag.outputs.tag }}" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
             --generate-notes --title "${{ steps.tag.outputs.tag }}"
