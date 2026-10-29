@@ -1194,7 +1194,15 @@ static void rtw89_core_tx_update_injection(struct rtw89_dev *rtwdev,
 	} else if (flags & IEEE80211_TX_RC_MCS) {
 		desc_info->data_rate = hw_rate->ht + idx;
 	} else {
-		chan = rtw89_chan_get(rtwdev, tx_req->rtwvif_link->chanctx_idx);
+		u8 idx = tx_req->rtwvif_link->chanctx_idx;
+
+		/* a monitor vif has no chanctx; the index is then out of range and
+		 * rtw89_chan_get() would read past hal->chanctx[] and pick the wrong
+		 * band, i.e. a CCK rate on 5 GHz that nothing can decode.
+		 */
+		if (idx >= NUM_OF_RTW89_CHANCTX)
+			idx = RTW89_CHANCTX_0;
+		chan = rtw89_chan_get(rtwdev, idx);
 
 		desc_info->data_rate = idx + (chan->band_type == RTW89_BAND_2G ?
 					      RTW89_HW_RATE_CCK1 : RTW89_HW_RATE_OFDM6);

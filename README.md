@@ -3,7 +3,8 @@
 Built for the stick on this machine (`3625:010b`, TP-Link Archer TX10UB Nano),
 from the upstream `rtw89` tree at tag `v7.0-rc1`, as four loadable modules.
 
-This was **built, not run**. Nothing was loaded, replaced or unloaded.
+**Built and tested on hardware** — see [TESTING.md](TESTING.md) for the run log,
+the results and the two driver bugs the testing found and fixed.
 
 ## What "full features" means here
 
@@ -65,7 +66,8 @@ way back to conforming behaviour.
 for a future floor drop and are not exercised by the supported range.
 
 Verified by compiling the same tree against 6.12, 6.17 and 7.0.0-38 headers
-(4 modules, 0 errors each). Not verified on real hardware for any version.
+(4 modules, 0 errors each). Only 7.0.0-38 has been run on hardware; the other
+versions are compile-only.
 
 ## Build
 
@@ -138,5 +140,9 @@ durable unlock.
 
 ## Status
 
-Compiled clean (only the harmless "compiler/pahole differs from the kernel
-build" notes). Not runtime-tested: not loaded, no hardware validation.
+Compiled clean, loaded and exercised on the target machine: the regulatory
+unlock, monitor RX and frame injection all work. Deauth frames are transmitted
+but do not disconnect a PMF client — the AP here runs `PSK SAE` and is
+MFP-capable. Details, numbers and the bugs found: [TESTING.md](TESTING.md).
+
+`tools/rtw89-test.py` reproduces the checks (`probe`, `monitor`, `deauth`).
