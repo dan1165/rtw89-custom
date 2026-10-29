@@ -121,7 +121,7 @@ jobs:
           cp packaging/arch/rtw89-custom.install .
           su builder -c "cd '$PWD' && makepkg -f --noconfirm"
           # the template token must not survive into the package
-          tar --zstd -xOf ./*.pkg.tar.zst usr/src/*/dkms.conf > /tmp/dkms.conf
+          tar --zstd -xOf ./*.pkg.tar.zst "usr/src/$NAME-$VERSION/dkms.conf" > /tmp/dkms.conf
           ! grep -q '@VERSION@' /tmp/dkms.conf
       - uses: actions/upload-artifact@v4
         with:
