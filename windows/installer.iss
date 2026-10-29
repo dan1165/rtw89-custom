@@ -5,7 +5,9 @@
 ; for this exact model) plus the knob script. The driver is installed with
 ; pnputil, the knobs are applied afterwards.
 
+#ifndef MyVersion
 #define MyVersion "0.0.0"
+#endif
 
 [Setup]
 AppId={{9F1C2B44-6E8A-4C31-9A57-2D3F1B0C7E55}
