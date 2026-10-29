@@ -115,21 +115,25 @@ jobs:
           name: arch
           path: "*.pkg.tar.zst"
 
-  # not a driver installer: a self-extracting archive of windows/
+  # installer for the Windows knobs. Still not a driver installer: the vendor
+  # package has to be present, the installer only relaxes what it exposes.
   exe:
     needs: source
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: build sfx
+      - name: install inno setup
+        run: choco install innosetup --no-progress -y
+      - name: build
         shell: pwsh
         run: |
           $v = Get-Content VERSION
-          & "C:\Program Files\7-Zip\7z.exe" a -sfx7zCon.sfx "rtw89-win-knobs-$v.exe" .\windows\*
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc "/DMyVersion=$v" windows\installer.iss
       - uses: actions/upload-artifact@v4
         with:
           name: exe
-          path: "*.exe"
+          path: dist/*.exe
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

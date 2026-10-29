@@ -5,7 +5,19 @@ separate Realtek driver (`.exe` installer → `.sys` + `.inf` + firmware), so
 "unlock" here means something different: there is no source to patch, only the
 registry values the driver reads at start.
 
-## What this script does
+## One-click
+
+`rtw89-win-knobs-setup-<ver>.exe` (built by CI) is an Inno Setup installer: run
+it, click through, done. It backs up the current values, applies the relaxed
+ones, restarts the adapter, and schedules a logon task so a driver update does
+not silently undo it. Uninstalling restores the backup and removes the task.
+
+It is **not** a driver installer. Realtek's package still has to be installed
+first — this only changes what that driver is willing to ask for. If the stick
+is not plugged in, the installer says so and leaves the logon task to do the
+work later.
+
+## What the script does
 
 `rtw89-win-knobs.ps1` finds the adapter's driver key and dumps:
 
@@ -21,6 +33,7 @@ broken install.
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\rtw89-win-knobs.ps1          # dump
 powershell -ExecutionPolicy Bypass -File .\rtw89-win-knobs.ps1 -Apply   # set
+powershell -ExecutionPolicy Bypass -File .\rtw89-win-knobs.ps1 -Revert  # undo
 ```
 
 Run elevated. Paste the dump back if a value needs adjusting — the keyword

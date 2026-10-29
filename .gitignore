@@ -19,5 +19,6 @@ src/.modules.order.cmd
 /*.pkg.tar.zst
 /*.tar.gz
 /*.exe
+/dist/
 /PKGBUILD
 /rtw89-custom.install
