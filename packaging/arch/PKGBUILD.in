@@ -1,6 +1,6 @@
 # Maintainer: dan1165 <dan1165@users.noreply.github.com>
 pkgname=rtw89-custom-dkms
-pkgver=@VERSION@
+pkgver=@PKGVER@
 pkgrel=1
 pkgdesc="Out-of-tree rtw89 driver for the RTL8851BU, regulatory unlock on"
 arch=('any')

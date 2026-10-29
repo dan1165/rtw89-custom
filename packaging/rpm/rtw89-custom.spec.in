@@ -1,5 +1,5 @@
 Name:           rtw89-custom
-Version:        @VERSION@
+Version:        @PKGVER@
 Release:        1%{?dist}
 Summary:        Out-of-tree rtw89 driver for the RTL8851BU, regulatory unlock on
 License:        GPL-2.0 OR BSD-3-Clause
@@ -44,5 +44,5 @@ fi
 %{_usrsrc}/%{name}-%{version}
 
 %changelog
-* Thu Oct 29 2026 dan1165 <dan1165@users.noreply.github.com> - @VERSION@-1
+* Thu Oct 29 2026 dan1165 <dan1165@users.noreply.github.com> - @PKGVER@-1
 - initial package
