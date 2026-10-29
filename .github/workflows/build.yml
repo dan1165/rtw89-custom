@@ -1,0 +1,146 @@
+name: build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  NAME: rtw89-custom
+
+jobs:
+  # the only job that proves the source still compiles
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y linux-headers-generic build-essential
+      - run: make -j"$(nproc)"
+
+  source:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+      - run: |
+          tar --exclude-vcs --exclude=./.github \
+            --exclude='*.o' --exclude='*.ko' --exclude='*.cmd' --exclude='*.mod' \
+            --exclude='*.mod.c' --exclude='modules.order' --exclude='Module.symvers' \
+            --exclude='.tmp_versions' \
+            -czf "$NAME-$VERSION.tar.gz" src VERSION README.md packaging windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source
+          path: "*.tar.gz"
+
+  deb:
+    needs: source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          name: source
+      - name: build
+        run: |
+          set -euo pipefail
+          root=pkg
+          mkdir -p "$root/usr/src/$NAME-$VERSION" "$root/DEBIAN"
+          tar -xzf "$NAME-$VERSION.tar.gz" -C "$root/usr/src/$NAME-$VERSION"
+          # dkms builds in the package dir, so the Kbuild has to sit there
+          mv "$root/usr/src/$NAME-$VERSION/src/"* "$root/usr/src/$NAME-$VERSION/"
+          rmdir "$root/usr/src/$NAME-$VERSION/src"
+          sed "s/@VERSION@/$VERSION/" packaging/deb/DEBIAN/control.in > "$root/DEBIAN/control"
+          for f in postinst prerm; do
+            sed "s/@VERSION@/$VERSION/" "packaging/deb/DEBIAN/$f" > "$root/DEBIAN/$f"
+            chmod 755 "$root/DEBIAN/$f"
+          done
+          dpkg-deb --root-owner-group -b "$root" "${NAME}_${VERSION}_all.deb"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: "*.deb"
+
+  rpm:
+    needs: source
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - run: dnf -y install rpm-build tar gzip sed
+      - uses: actions/checkout@v4
+      - run: echo "VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          name: source
+      - name: build
+        run: |
+          set -euo pipefail
+          mkdir -p rpmbuild/SOURCES rpmbuild/SPECS
+          cp "$NAME-$VERSION.tar.gz" rpmbuild/SOURCES/
+          sed "s/@VERSION@/$VERSION/" "packaging/rpm/$NAME.spec.in" > "rpmbuild/SPECS/$NAME.spec"
+          rpmbuild -bb --define "_topdir $PWD/rpmbuild" "rpmbuild/SPECS/$NAME.spec"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: rpmbuild/RPMS/**/*.rpm
+
+  arch:
+    needs: source
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - run: pacman -Sy --noconfirm --needed base-devel
+      - uses: actions/checkout@v4
+      - run: echo "VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          name: source
+      - name: build
+        run: |
+          set -euo pipefail
+          useradd -m builder
+          chown -R builder "$PWD"
+          sha=$(sha256sum "$NAME-$VERSION.tar.gz" | cut -d' ' -f1)
+          sed -e "s/@VERSION@/$VERSION/" -e "s/@SHA256@/$sha/" \
+            packaging/arch/PKGBUILD.in > PKGBUILD
+          cp packaging/arch/rtw89-custom.install .
+          su builder -c "cd '$PWD' && makepkg -f --noconfirm"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch
+          path: "*.pkg.tar.zst"
+
+  # not a driver installer: a self-extracting archive of windows/
+  exe:
+    needs: source
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build sfx
+        shell: pwsh
+        run: |
+          $v = Get-Content VERSION
+          & "C:\Program Files\7-Zip\7z.exe" a -sfx7zCon.sfx "rtw89-win-knobs-$v.exe" .\windows\*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exe
+          path: "*.exe"
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [deb, rpm, arch, exe]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - run: cd dist && sha256sum * > SHA256SUMS
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes

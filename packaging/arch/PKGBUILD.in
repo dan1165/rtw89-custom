@@ -1,0 +1,21 @@
+# Maintainer: dan1165 <dan1165@users.noreply.github.com>
+pkgname=rtw89-custom-dkms
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc="Out-of-tree rtw89 driver for the RTL8851BU, regulatory unlock on"
+arch=('any')
+url="https://github.com/dan1165/rtw89-custom"
+license=('GPL-2.0 OR BSD-3-Clause')
+depends=('dkms' 'gcc' 'make')
+makedepends=('linux-headers')
+install=rtw89-custom.install
+source=("rtw89-custom-$pkgver.tar.gz")
+sha256sums=('@SHA256@')
+
+package() {
+	install -d "$pkgdir/usr/src/rtw89-custom-$pkgver"
+	cp -r "$srcdir/src/." "$pkgdir/usr/src/rtw89-custom-$pkgver/"
+	cp "$srcdir/VERSION" "$srcdir/README.md" "$pkgdir/usr/src/rtw89-custom-$pkgver/"
+	sed "s/@VERSION@/$pkgver/" "$srcdir/packaging/dkms.conf.in" \
+		> "$pkgdir/usr/src/rtw89-custom-$pkgver/dkms.conf"
+}

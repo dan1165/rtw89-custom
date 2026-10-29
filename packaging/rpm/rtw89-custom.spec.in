@@ -1,0 +1,48 @@
+Name:           rtw89-custom
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        Out-of-tree rtw89 driver for the RTL8851BU, regulatory unlock on
+License:        GPL-2.0 OR BSD-3-Clause
+URL:            https://github.com/dan1165/rtw89-custom
+Source0:        %{name}-%{version}.tar.gz
+BuildArch:      noarch
+Requires:       dkms >= 2.1.0.0
+Requires:       gcc, make
+Recommends:     kernel-devel
+
+%description
+Built from the upstream rtw89 tree with every optional code path compiled in
+(debugfs, dynamic debug, WoW, monitor, injection) and the regulatory unlock
+enabled by default: all channels the chip supports, no DFS/CAC, no NO-IR, and a
+TX power boost. Built through DKMS against the running kernel.
+
+Set unlock_regd=0 txpwr_boost=0 at load time for the conforming behaviour.
+
+%prep
+%setup -q -c
+
+%build
+
+%install
+install -d %{buildroot}%{_usrsrc}/%{name}-%{version}
+cp -r src/. %{buildroot}%{_usrsrc}/%{name}-%{version}/
+cp VERSION README.md %{buildroot}%{_usrsrc}/%{name}-%{version}/
+sed 's/@VERSION@/%{version}/' packaging/dkms.conf.in \
+	> %{buildroot}%{_usrsrc}/%{name}-%{version}/dkms.conf
+
+%post
+dkms add -m %{name} -v %{version} || true
+dkms build -m %{name} -v %{version} || true
+dkms install -m %{name} -v %{version} --force || true
+
+%preun
+if [ "$1" = 0 ]; then
+	dkms remove -m %{name} -v %{version} --all || true
+fi
+
+%files
+%{_usrsrc}/%{name}-%{version}
+
+%changelog
+* Thu Oct 29 2026 dan1165 <dan1165@users.noreply.github.com> - @VERSION@-1
+- initial package

@@ -1,0 +1,13 @@
+post_install() {
+	dkms add -m rtw89-custom -v "$1" || true
+	dkms build -m rtw89-custom -v "$1" || true
+	dkms install -m rtw89-custom -v "$1" --force || true
+}
+
+post_upgrade() {
+	post_install "$1"
+}
+
+pre_remove() {
+	dkms remove -m rtw89-custom -v "$1" --all || true
+}

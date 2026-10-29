@@ -94,6 +94,23 @@ sudo ./../wmon.sh start          # monitor mode (../wmon.sh)
 sudo ./../inject_test.py         # injection: expects a probe response
 ```
 
+## Packages
+
+`.github/workflows/build.yml` builds, on a tag `v*` or manual dispatch:
+
+| artifact | how |
+|---|---|
+| `rtw89-custom_<ver>_all.deb` | DKMS source package, `dpkg-deb` |
+| `rtw89-custom-<ver>-1.noarch.rpm` | DKMS source package, `rpmbuild` in a Fedora container |
+| `rtw89-custom-dkms-<ver>-1-any.pkg.tar.zst` | DKMS source package, `makepkg` in an Arch container |
+| `rtw89-win-knobs-<ver>.exe` | 7-Zip self-extracting archive of `windows/` — **not** a driver installer |
+| source tarball + `SHA256SUMS` | attached to the release |
+
+All three Linux packages build the modules through DKMS against the *target*
+kernel, so they are kernel-version agnostic in principle — but the source is
+pinned to v7.0-rc1, so kernels far from that will not compile. The `compile`
+job gates every other job for that reason.
+
 ## Windows
 
 See `windows/` — Windows cannot load these modules; the equivalent is a registry

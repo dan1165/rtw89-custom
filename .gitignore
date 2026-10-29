@@ -10,3 +10,14 @@ src/modules.order
 src/Module.symvers
 src/.tmp_versions/
 src/.modules.order.cmd
+
+# packaging output
+/pkg/
+/rpmbuild/
+/*.deb
+/*.rpm
+/*.pkg.tar.zst
+/*.tar.gz
+/*.exe
+/PKGBUILD
+/rtw89-custom.install

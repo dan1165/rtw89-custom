@@ -1,0 +1,16 @@
+Package: rtw89-custom
+Version: @VERSION@
+Section: kernel
+Priority: optional
+Architecture: all
+Depends: dkms (>= 2.1.0.0), build-essential
+Recommends: linux-headers-generic
+Maintainer: dan1165 <dan1165@users.noreply.github.com>
+Homepage: https://github.com/dan1165/rtw89-custom
+Description: Out-of-tree rtw89 driver for the RTL8851BU, regulatory unlock on
+ Built from the upstream rtw89 tree with every optional code path compiled in
+ (debugfs, dynamic debug, WoW, monitor, injection) and the regulatory unlock
+ enabled by default: all channels the chip supports, no DFS/CAC, no NO-IR, and
+ a TX power boost. Built through DKMS against the running kernel.
+ .
+ Set unlock_regd=0 txpwr_boost=0 at load time for the conforming behaviour.
