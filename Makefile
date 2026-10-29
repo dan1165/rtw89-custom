@@ -15,4 +15,18 @@ all:
 clean:
 	$(MAKE) -C $(KDIR) M=$(SRC) clean
 
-.PHONY: all clean
+# apply / revert. The in-tree modules use the same names, so they go first.
+load:
+	-sudo modprobe -r rtw89_8851bu rtw89_8851b rtw89_usb rtw89_core
+	sudo insmod src/rtw89_core.ko $(RTW89_ARGS)
+	sudo insmod src/rtw89_usb.ko
+	sudo insmod src/rtw89_8851b.ko
+	sudo insmod src/rtw89_8851bu.ko
+
+unload:
+	-sudo rmmod rtw89_8851bu
+	-sudo rmmod rtw89_8851b
+	-sudo rmmod rtw89_usb
+	-sudo rmmod rtw89_core
+
+.PHONY: all clean load unload

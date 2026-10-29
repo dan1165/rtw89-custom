@@ -44,15 +44,18 @@ static void rtw89_regd_unlock_channels(struct wiphy *wiphy)
 static
 void rtw89_regd_notifier(struct wiphy *wiphy, struct regulatory_request *request);
 
-bool rtw89_unlock_regd;
+/* Both default to the unlocked setting: build, load, done. Set unlock_regd=0
+ * (and txpwr_boost=0) to get the stock, regulation-conforming behaviour back.
+ */
+bool rtw89_unlock_regd = true;
 module_param_named(unlock_regd, rtw89_unlock_regd, bool, 0444);
 MODULE_PARM_DESC(unlock_regd,
-	"Ignore regulatory restrictions: every channel the chip supports, no DFS/CAC, no NO-IR");
+	"Ignore regulatory restrictions: every channel the chip supports, no DFS/CAC, no NO-IR (default: on)");
 
-int rtw89_txpwr_boost;
+int rtw89_txpwr_boost = 3;
 module_param_named(txpwr_boost, rtw89_txpwr_boost, int, 0444);
 MODULE_PARM_DESC(txpwr_boost,
-	"Add dB to every TX power limit; with unlock_regd SAR and TPE clamping are skipped too");
+	"Add dB to every TX power limit; with unlock_regd SAR and TPE clamping are skipped too (default: 3, 0 = off)");
 
 /* "99" is the conventional alpha2 of an unlocked world domain. Rules carry no
  * DFS, NO-IR or AUTO-BW flag, so cfg80211 neither requires CAC nor forbids

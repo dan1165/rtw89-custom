@@ -22,15 +22,17 @@ compiled in instead of depending on the distro's config:
 | 8851B + 8851BU only | `Kbuild` | other chips trimmed from the build |
 | regulatory unlock + TX power boost | `unlock_regd`, `txpwr_boost` params | opt-in, see below |
 
-## Regulatory unlock (opt-in, off by default)
+## Regulatory unlock (on by default)
 
-Two module parameters. Both are read during setup, so they are load-time only
-(`0444`); changing them needs a reload.
+Two module parameters, both **on by default** — build, `make load`, done. Set
+`unlock_regd=0 txpwr_boost=0` to get the stock, regulation-conforming driver
+back. Both are read during setup, so they are load-time only (`0444`); changing
+them needs a reload.
 
 | param | effect |
 |---|---|
-| `unlock_regd=1` | applies a custom `"99"` world domain before registration: clears `RADAR`, `NO_IR`, `INDOOR_ONLY`, `NO_HT40`, `NO_80MHZ`, `NO_160MHZ`, `NO_320MHZ` and the 6 GHz client flags on every channel the chip registered, and forces the FCC TX power rule set. `REGULATORY_STRICT_REG` + no reg notifier, so neither `iw reg set` nor a country IE can tighten it again. |
-| `txpwr_boost=<dB>` | added to every TX power limit at the single choke point (`rtw89_phy_read_txpwr_limit` and its RU twin), clamped to the 6-bit MAC field. With `unlock_regd` set, SAR and 6 GHz TPE clamping are skipped as well. |
+| `unlock_regd` (default **1**) | applies a custom `"99"` world domain before registration: clears `RADAR`, `NO_IR`, `INDOOR_ONLY`, `NO_HT40`, `NO_80MHZ`, `NO_160MHZ`, `NO_320MHZ` and the 6 GHz client flags on every channel the chip registered, and forces the FCC TX power rule set. `REGULATORY_STRICT_REG` + no reg notifier, so neither `iw reg set` nor a country IE can tighten it again. |
+| `txpwr_boost` (default **3** dB) | added to every TX power limit at the single choke point (`rtw89_phy_read_txpwr_limit` and its RU twin), clamped to the 6-bit MAC field. With `unlock_regd` set, SAR and 6 GHz TPE clamping are skipped as well. |
 
 What is still **not** unlocked, on purpose:
 
@@ -42,8 +44,9 @@ What is still **not** unlocked, on purpose:
 - the 30 dBm in the rules is a cfg80211 ceiling. The 8851BU PA does roughly
   20 dBm conducted, so a large `txpwr_boost` mostly buys distortion, not range.
 
-Legality is now yours: with `unlock_regd=1` you may transmit outside your
-country's allocation.
+Legality is now yours: by default this driver transmits outside your country's
+allocation. `make load` with `RTW89_ARGS="unlock_regd=0 txpwr_boost=0"` is the
+way back to conforming behaviour.
 
 ## Build
 
@@ -69,12 +72,9 @@ unloaded before these can be inserted.
 ## Loading (documented, not executed)
 
 ```sh
-sudo modprobe -r rtw89_8851bu rtw89_8851b rtw89_usb rtw89_core
-sudo insmod src/rtw89_core.ko unlock_regd=1 txpwr_boost=3   # drop the params to stay legal
-sudo insmod src/rtw89_usb.ko
-sudo insmod src/rtw89_8851b.ko
-sudo insmod src/rtw89_8851bu.ko
+make load          # unloads the in-tree modules, inserts these in order
 dmesg | tail -30
+make unload        # reverse
 ```
 
 Unload in reverse order. `modprobe -r` after that points at the in-tree copies
