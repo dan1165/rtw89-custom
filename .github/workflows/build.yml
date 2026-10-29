@@ -115,8 +115,8 @@ jobs:
           name: arch
           path: "*.pkg.tar.zst"
 
-  # installer for the Windows knobs. Still not a driver installer: the vendor
-  # package has to be present, the installer only relaxes what it exposes.
+  # driver installer: ships the vendor Wi-Fi driver (windows/driver/x64) and
+  # applies the knobs on top. x64 only.
   exe:
     needs: source
     runs-on: windows-latest

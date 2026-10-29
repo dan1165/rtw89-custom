@@ -5,17 +5,23 @@ separate Realtek driver (`.exe` installer → `.sys` + `.inf` + firmware), so
 "unlock" here means something different: there is no source to patch, only the
 registry values the driver reads at start.
 
-## One-click
+## One-click driver install
 
-`rtw89-win-knobs-setup-<ver>.exe` (built by CI) is an Inno Setup installer: run
-it, click through, done. It backs up the current values, applies the relaxed
-ones, restarts the adapter, and schedules a logon task so a driver update does
-not silently undo it. Uninstalling restores the backup and removes the task.
+`rtw89-win-driver-setup-<ver>.exe` (built by CI) is an Inno Setup installer:
+run it, click through, done. It
 
-It is **not** a driver installer. Realtek's package still has to be installed
-first — this only changes what that driver is willing to ask for. If the stick
-is not plugged in, the installer says so and leaves the logon task to do the
-work later.
+1. installs the vendor Wi-Fi driver with `pnputil` — Realtek `5001.19.113.1`,
+   taken from TP-Link's own package for this exact model,
+2. backs up the current knob values, applies the relaxed ones, restarts the
+   adapter,
+3. schedules a logon task so a driver update does not silently undo the knobs.
+
+Uninstalling restores the knobs and removes the task. The driver stays in the
+driver store, exactly as it would after uninstalling any vendor package — use
+`-RemoveDriver` if you want it gone.
+
+x64 only (Win10 x64 / Win11). Bluetooth is **not** included: TP-Link's package
+also carries a BT driver, this one ships the Wi-Fi half only.
 
 ## What the script does
 
@@ -34,6 +40,7 @@ broken install.
 powershell -ExecutionPolicy Bypass -File .\rtw89-win-knobs.ps1          # dump
 powershell -ExecutionPolicy Bypass -File .\rtw89-win-knobs.ps1 -Apply   # set
 powershell -ExecutionPolicy Bypass -File .\rtw89-win-knobs.ps1 -Revert  # undo
+powershell -ExecutionPolicy Bypass -File .\rtw89-win-knobs.ps1 -RemoveDriver
 ```
 
 Run elevated. Paste the dump back if a value needs adjusting — the keyword
@@ -46,9 +53,10 @@ The limits that are not in the driver are not here either: channels the chip
 cannot tune, firmware radar detection, and the PA ceiling (~20 dBm conducted).
 Registry values only change what the driver is willing to ask for.
 
-## Patching the installer instead
+## Where the driver files come from
 
-Registry edits are per-machine and lost on driver reinstall. The durable version
-is to patch the INF inside the `.exe` (add a permissive `[Registry]`/`AddReg`
-block, repack) so a fresh install comes up unlocked. That needs the installer
-file itself; drop it in `~/Downloads` and it can be extracted and patched.
+`driver/x64/` is extracted from TP-Link's published package
+(`Archer_TX10UB_Nano(US)_V1_5001.19.113.1_Win10_Win11.zip`, 2025-10-21) with
+`innoextract`, unmodified. Redistribution is under TP-Link's/Realtek's driver
+terms; the INF and CAT are theirs, not ours. To refresh it, download that zip,
+extract `app/Driver/Win10X64/*` and drop it in `driver/x64/`.

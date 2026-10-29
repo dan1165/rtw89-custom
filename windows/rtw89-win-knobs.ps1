@@ -16,7 +16,8 @@ param(
 	[switch]$Apply,
 	[switch]$Revert,
 	[switch]$Quiet,
-	[switch]$NoTask
+	[switch]$NoTask,
+	[switch]$RemoveDriver
 )
 
 $ErrorActionPreference = 'Stop'
@@ -44,6 +45,24 @@ function Get-AdapterKey($adapter) {
 		$p = Get-ItemProperty $_.PSPath -Name NetCfgInstanceId -ErrorAction SilentlyContinue
 		$p -and $p.NetCfgInstanceId -eq $adapter.InterfaceGuid.ToString()
 	} | Select-Object -First 1
+}
+
+if ($RemoveDriver) {
+	# remove every staged copy of the vendor INF from the driver store
+	$cur = $null
+	$targets = @()
+	foreach ($line in (& pnputil.exe /enum-drivers)) {
+		if ($line -match 'Published Name\s*:\s*(\S+)') { $cur = $Matches[1] }
+		elseif ($line -match 'Original Name\s*:\s*(\S+)' -and $Matches[1] -eq 'netrtwlanu6.inf' -and $cur) {
+			$targets += $cur
+		}
+	}
+	if (-not $targets) { Say 'no staged netrtwlanu6.inf found' Yellow; exit 0 }
+	foreach ($t in $targets) {
+		& pnputil.exe /delete-driver $t /uninstall /force | Out-Null
+		Say "removed $t"
+	}
+	exit 0
 }
 
 $adapters = @(Get-NetAdapter -Physical | Where-Object {

@@ -103,7 +103,7 @@ sudo ./../inject_test.py         # injection: expects a probe response
 | `rtw89-custom_<ver>_all.deb` | DKMS source package, `dpkg-deb` |
 | `rtw89-custom-<ver>-1.noarch.rpm` | DKMS source package, `rpmbuild` in a Fedora container |
 | `rtw89-custom-dkms-<ver>-1-any.pkg.tar.zst` | DKMS source package, `makepkg` in an Arch container |
-| `rtw89-win-knobs-setup-<ver>.exe` | Inno Setup installer for the Windows knobs (backup, apply, logon task) — **not** a driver installer |
+| `rtw89-win-driver-setup-<ver>.exe` | Inno Setup driver installer: vendor Wi-Fi driver + knobs + logon task (x64) |
 | source tarball + `SHA256SUMS` | attached to the release |
 
 All three Linux packages build the modules through DKMS against the *target*
