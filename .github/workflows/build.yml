@@ -55,12 +55,16 @@ jobs:
           # dkms builds in the package dir, so the Kbuild has to sit there
           mv "$root/usr/src/$NAME-$VERSION/src/"* "$root/usr/src/$NAME-$VERSION/"
           rmdir "$root/usr/src/$NAME-$VERSION/src"
+          sed "s/@VERSION@/$VERSION/" packaging/dkms.conf.in \
+            > "$root/usr/src/$NAME-$VERSION/dkms.conf"
           sed "s/@VERSION@/$VERSION/" packaging/deb/DEBIAN/control.in > "$root/DEBIAN/control"
           for f in postinst prerm; do
             sed "s/@VERSION@/$VERSION/" "packaging/deb/DEBIAN/$f" > "$root/DEBIAN/$f"
             chmod 755 "$root/DEBIAN/$f"
           done
           dpkg-deb --root-owner-group -b "$root" "${NAME}_${VERSION}_all.deb"
+          # dkms add is a no-op without this file
+          dpkg-deb -c "${NAME}_${VERSION}_all.deb" | grep -q 'dkms.conf$'
       - uses: actions/upload-artifact@v4
         with:
           name: deb

@@ -4,10 +4,16 @@ set -e
 NAME=rtw89-custom
 VER="@VERSION@"
 
-if command -v dkms >/dev/null 2>&1; then
-	dkms add -m "$NAME" -v "$VER" || true
-	dkms build -m "$NAME" -v "$VER" || true
-	dkms install -m "$NAME" -v "$VER" --force || true
+if ! command -v dkms >/dev/null 2>&1; then
+	echo "rtw89-custom: dkms not found, module not built" >&2
+	exit 0
 fi
+
+for step in "add" "build" "install"; do
+	if ! dkms "$step" -m "$NAME" -v "$VER" --force; then
+		echo "rtw89-custom: dkms $step failed, module not built" >&2
+		exit 0
+	fi
+done
 
 exit 0
