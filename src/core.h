@@ -7789,6 +7789,9 @@ bool rtw89_legacy_rate_to_bitrate(struct rtw89_dev *rtwdev, u8 legacy_rate, u16 
 int rtw89_regd_setup(struct rtw89_dev *rtwdev);
 int rtw89_regd_init_hint(struct rtw89_dev *rtwdev);
 const char *rtw89_regd_get_string(enum rtw89_regulation_type regd);
+
+extern bool rtw89_unlock_regd;
+extern int rtw89_txpwr_boost;
 void rtw89_traffic_stats_init(struct rtw89_dev *rtwdev,
 			      struct rtw89_traffic_stats *stats);
 struct rtw89_wait_response *

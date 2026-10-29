@@ -2597,6 +2597,15 @@ s8 rtw89_phy_read_txpwr_limit(struct rtw89_dev *rtwdev, u8 band,
 		offset = rtw89_phy_ant_gain_offset(rtwdev, freq);
 
 	lmt = rtw89_phy_txpwr_rf_to_mac(rtwdev, min(lmt + offset, da_lmt));
+
+	if (rtw89_txpwr_boost)
+		lmt = clamp_t(s16, lmt + rtw89_phy_txpwr_dbm_to_mac(rtwdev,
+								   rtw89_txpwr_boost),
+			      -64, 63);
+
+	if (rtw89_unlock_regd)
+		return lmt;
+
 	sar = rtw89_query_sar(rtwdev, &sar_parm);
 	cstr = rtw89_phy_get_tpe_constraint(rtwdev, band);
 
@@ -2877,6 +2886,15 @@ s8 rtw89_phy_read_txpwr_limit_ru(struct rtw89_dev *rtwdev, u8 band,
 		offset = rtw89_phy_ant_gain_offset(rtwdev, freq);
 
 	lmt_ru = rtw89_phy_txpwr_rf_to_mac(rtwdev, min(lmt_ru + offset, da_lmt_ru));
+
+	if (rtw89_txpwr_boost)
+		lmt_ru = clamp_t(s16, lmt_ru + rtw89_phy_txpwr_dbm_to_mac(rtwdev,
+									   rtw89_txpwr_boost),
+				 -64, 63);
+
+	if (rtw89_unlock_regd)
+		return lmt_ru;
+
 	sar = rtw89_query_sar(rtwdev, &sar_parm);
 	cstr = rtw89_phy_get_tpe_constraint(rtwdev, band);
 

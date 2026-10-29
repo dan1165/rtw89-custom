@@ -7,8 +7,66 @@
 #include "ps.h"
 #include "util.h"
 
+/* Flags that only exist to keep us inside a regulatory regime. DISABLED is
+ * kept: it marks channels the chip itself cannot do.
+ */
+#define RTW89_UNLOCK_CHAN_CLR (IEEE80211_CHAN_RADAR |			\
+			       IEEE80211_CHAN_NO_IR |			\
+			       IEEE80211_CHAN_INDOOR_ONLY |		\
+			       IEEE80211_CHAN_NO_HT40 |			\
+			       IEEE80211_CHAN_NO_80MHZ |		\
+			       IEEE80211_CHAN_NO_160MHZ |		\
+			       IEEE80211_CHAN_NO_320MHZ |		\
+			       IEEE80211_CHAN_NO_6GHZ_VLP_CLIENT |	\
+			       IEEE80211_CHAN_NO_6GHZ_AFC_CLIENT)
+
+/* handle_channel_custom() only ORs the rule flags in, so the driver's own
+ * RADAR/NO-IR bits have to be cleared first or they survive the custom domain.
+ */
+static void rtw89_regd_unlock_channels(struct wiphy *wiphy)
+{
+	enum nl80211_band band;
+	int i;
+
+	for (band = 0; band < NUM_NL80211_BANDS; band++) {
+		struct ieee80211_supported_band *sband = wiphy->bands[band];
+
+		if (!sband)
+			continue;
+
+		for (i = 0; i < sband->n_channels; i++) {
+			sband->channels[i].flags &= ~RTW89_UNLOCK_CHAN_CLR;
+			sband->channels[i].orig_flags &= ~RTW89_UNLOCK_CHAN_CLR;
+		}
+	}
+}
+
 static
 void rtw89_regd_notifier(struct wiphy *wiphy, struct regulatory_request *request);
+
+bool rtw89_unlock_regd;
+module_param_named(unlock_regd, rtw89_unlock_regd, bool, 0444);
+MODULE_PARM_DESC(unlock_regd,
+	"Ignore regulatory restrictions: every channel the chip supports, no DFS/CAC, no NO-IR");
+
+int rtw89_txpwr_boost;
+module_param_named(txpwr_boost, rtw89_txpwr_boost, int, 0444);
+MODULE_PARM_DESC(txpwr_boost,
+	"Add dB to every TX power limit; with unlock_regd SAR and TPE clamping are skipped too");
+
+/* "99" is the conventional alpha2 of an unlocked world domain. Rules carry no
+ * DFS, NO-IR or AUTO-BW flag, so cfg80211 neither requires CAC nor forbids
+ * beacons. Channels themselves still come from the chip's band list.
+ */
+static const struct ieee80211_regdomain rtw89_unlock_regdomain = {
+	.n_reg_rules = 3,
+	.alpha2 = "99",
+	.reg_rules = {
+		REG_RULE(2402 - 10, 2484 + 10, 40, 0, 30, 0),
+		REG_RULE(5150 - 10, 5925, 160, 0, 30, 0),
+		REG_RULE(5925, 7125 + 10, 320, 0, 30, 0),
+	},
+};
 
 #define COUNTRY_REGD(_alpha2, _rule_2ghz, _rule_5ghz, _rule_6ghz, _fmap) \
 	{							\
@@ -707,6 +765,27 @@ int rtw89_regd_setup(struct rtw89_dev *rtwdev)
 	rtw89_regd_setup_unii4(rtwdev, wiphy);
 	rtw89_regd_setup_6ghz(rtwdev, wiphy);
 
+	if (rtw89_unlock_regd) {
+		const struct rtw89_regd *fcc;
+
+		/* FCC is the loosest TX power table set the chips carry. */
+		fcc = rtw89_regd_find_reg_by_name(rtwdev, "US");
+		if (fcc)
+			regulatory->regd = fcc;
+		regulatory->programmed = true;
+
+		wiphy->regulatory_flags |= REGULATORY_CUSTOM_REG |
+					   REGULATORY_STRICT_REG |
+					   REGULATORY_COUNTRY_IE_IGNORE;
+		rtw89_regd_unlock_channels(wiphy);
+		wiphy_apply_custom_regulatory(wiphy, &rtw89_unlock_regdomain);
+
+		rtw89_info(rtwdev,
+			   "regulatory unlocked: all channels, no DFS, txpwr +%d dB\n",
+			   rtw89_txpwr_boost);
+		return 0;
+	}
+
 	wiphy->reg_notifier = rtw89_regd_notifier;
 	return 0;
 }
@@ -719,6 +798,9 @@ int rtw89_regd_init_hint(struct rtw89_dev *rtwdev)
 
 	if (!wiphy)
 		return -EINVAL;
+
+	if (rtw89_unlock_regd)
+		return 0;
 
 	chip_regd = rtw89_regd_find_reg_by_name(rtwdev, rtwdev->efuse.country_code);
 	if (!rtw89_regd_is_ww(chip_regd)) {
