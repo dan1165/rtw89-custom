@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
+#
+# Out-of-tree build for the RTL8851BU (rtw89) USB adapter.
+#
+# Same object composition as drivers/net/wireless/realtek/rtw89/Makefile,
+# limited to the four modules this stick needs, with the driver's optional
+# debug code always compiled in. The upstream Makefile is kept untouched next
+# to this file for reference and for diffing against a newer kernel.
+
+obj-m += rtw89_core.o
+obj-m += rtw89_usb.o
+obj-m += rtw89_8851b.o
+obj-m += rtw89_8851bu.o
+
+rtw89_core-y := core.o \
+		mac80211.o \
+		mac.o \
+		mac_be.o \
+		phy.o \
+		phy_be.o \
+		fw.o \
+		cam.o \
+		efuse.o \
+		efuse_be.o \
+		regd.o \
+		sar.o \
+		coex.o \
+		ps.o \
+		chan.o \
+		ser.o \
+		acpi.o \
+		util.o \
+		debug.o \
+		wow.o
+
+rtw89_usb-y := usb.o
+rtw89_8851b-y := rtw8851b.o rtw8851b_table.o rtw8851b_rfk.o rtw8851b_rfk_table.o
+rtw89_8851bu-y := rtw8851bu.o
+
+# CONFIG_RTW89_DEBUG    -> debug.o (already listed above)
+# CONFIG_RTW89_DEBUGMSG -> rtw89_debug() output that can be enabled per category
+# CONFIG_RTW89_DEBUGFS  -> /sys/kernel/debug/rtw89/{read_reg,write_reg,send_h2c,...}
+ccflags-y += -DCONFIG_RTW89_DEBUG -DCONFIG_RTW89_DEBUGMSG -DCONFIG_RTW89_DEBUGFS
