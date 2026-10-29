@@ -149,7 +149,12 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - run: cd dist && sha256sum * > SHA256SUMS
+      # artifact upload keeps the rpm's noarch/ subdir; flatten it so the
+      # checksum glob and the release upload only ever see files
+      - run: |
+          find dist -mindepth 2 -type f -exec mv -t dist {} +
+          find dist -mindepth 1 -type d -empty -delete
+          cd dist && sha256sum * > SHA256SUMS
       - id: tag
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then
