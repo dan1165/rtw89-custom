@@ -94,6 +94,12 @@ sudo ./../wmon.sh start          # monitor mode (../wmon.sh)
 sudo ./../inject_test.py         # injection: expects a probe response
 ```
 
+## Windows
+
+See `windows/` — Windows cannot load these modules; the equivalent is a registry
+knob dump/apply script, and the INF inside the vendor `.exe` can be patched for a
+durable unlock.
+
 ## Status
 
 Compiled clean (only the harmless "compiler/pahole differs from the kernel
