@@ -61,7 +61,7 @@ MODULE_PARM_DESC(txpwr_boost,
  * DFS, NO-IR or AUTO-BW flag, so cfg80211 neither requires CAC nor forbids
  * beacons. Channels themselves still come from the chip's band list.
  */
-static const struct ieee80211_regdomain rtw89_unlock_regdomain = {
+static struct ieee80211_regdomain rtw89_unlock_regdomain = {
 	.n_reg_rules = 3,
 	.alpha2 = "99",
 	.reg_rules = {
@@ -770,6 +770,7 @@ int rtw89_regd_setup(struct rtw89_dev *rtwdev)
 
 	if (rtw89_unlock_regd) {
 		const struct rtw89_regd *fcc;
+		int ret;
 
 		/* FCC is the loosest TX power table set the chips carry. */
 		fcc = rtw89_regd_find_reg_by_name(rtwdev, "US");
@@ -777,11 +778,25 @@ int rtw89_regd_setup(struct rtw89_dev *rtwdev)
 			regulatory->regd = fcc;
 		regulatory->programmed = true;
 
-		wiphy->regulatory_flags |= REGULATORY_CUSTOM_REG |
-					   REGULATORY_STRICT_REG |
-					   REGULATORY_COUNTRY_IE_IGNORE;
+		/* SELF_MANAGED is what actually keeps cfg80211 off our channels:
+		 * without it a user regd request re-applies the global domain over
+		 * ours and the radar flags come back.
+		 */
+		/* SELF_MANAGED is what actually keeps cfg80211 off our channels:
+		 * without it a user regd request re-applies the global domain over
+		 * ours and the radar flags come back. It is mutually exclusive
+		 * with CUSTOM_REG/STRICT_REG/COUNTRY_IE_IGNORE in wiphy_register.
+		 */
+		wiphy->regulatory_flags |= REGULATORY_WIPHY_SELF_MANAGED;
 		rtw89_regd_unlock_channels(wiphy);
-		wiphy_apply_custom_regulatory(wiphy, &rtw89_unlock_regdomain);
+		/* wiphy_apply_custom_regulatory() would set CUSTOM_REG, which is
+		 * mutually exclusive with SELF_MANAGED; this is the self-managed
+		 * API and it is applied from reg_work.
+		 */
+		ret = regulatory_set_wiphy_regd(wiphy, &rtw89_unlock_regdomain);
+		if (ret)
+			rtw89_warn(rtwdev,
+				   "failed to set unlocked regdomain: %d\n", ret);
 
 		rtw89_info(rtwdev,
 			   "regulatory unlocked: all channels, no DFS, txpwr +%d dB\n",

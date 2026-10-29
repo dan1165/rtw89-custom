@@ -18,6 +18,9 @@ clean:
 # apply / revert. The in-tree modules use the same names, so they go first.
 load:
 	-sudo modprobe -r rtw89_8851bu rtw89_8851b rtw89_usb rtw89_core
+	# modprobe -r takes the mac80211/cfg80211 deps with it; insmod does not
+	# resolve dependencies, so put them back first
+	sudo modprobe mac80211 cfg80211
 	sudo insmod src/rtw89_core.ko $(RTW89_ARGS)
 	sudo insmod src/rtw89_usb.ko
 	sudo insmod src/rtw89_8851b.ko
