@@ -40,4 +40,5 @@ rtw89_8851bu-y := rtw8851bu.o
 # CONFIG_RTW89_DEBUG    -> debug.o (already listed above)
 # CONFIG_RTW89_DEBUGMSG -> rtw89_debug() output that can be enabled per category
 # CONFIG_RTW89_DEBUGFS  -> /sys/kernel/debug/rtw89/{read_reg,write_reg,send_h2c,...}
+ccflags-y += -include $(src)/compat.h
 ccflags-y += -DCONFIG_RTW89_DEBUG -DCONFIG_RTW89_DEBUGMSG -DCONFIG_RTW89_DEBUGFS

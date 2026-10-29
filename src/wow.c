@@ -666,6 +666,14 @@ static struct ieee80211_key_conf *rtw89_wow_gtk_rekey(struct rtw89_dev *rtwdev,
 	memcpy(rekey_conf->key, gtk,
 	       flex_array_size(rekey_conf, key, cipher_info->len));
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+	/* before 6.18 the key_conf is handed over, not copied */
+	if (ieee80211_vif_is_mld(wow_vif))
+		key = ieee80211_gtk_rekey_add(wow_vif, rekey_conf,
+					      rtwvif_link->link_id);
+	else
+		key = ieee80211_gtk_rekey_add(wow_vif, rekey_conf, -1);
+#else
 	if (ieee80211_vif_is_mld(wow_vif))
 		key = ieee80211_gtk_rekey_add(wow_vif, keyidx, gtk,
 					      cipher_info->len,
@@ -675,6 +683,7 @@ static struct ieee80211_key_conf *rtw89_wow_gtk_rekey(struct rtw89_dev *rtwdev,
 					      cipher_info->len, -1);
 
 	kfree(rekey_conf);
+#endif
 	if (IS_ERR(key)) {
 		rtw89_err(rtwdev, "ieee80211_gtk_rekey_add failed\n");
 		return NULL;

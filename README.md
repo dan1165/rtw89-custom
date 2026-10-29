@@ -48,6 +48,25 @@ Legality is now yours: by default this driver transmits outside your country's
 allocation. `make load` with `RTW89_ARGS="unlock_regd=0 txpwr_boost=0"` is the
 way back to conforming behaviour.
 
+## Kernel support
+
+| kernel | state |
+|---|---|
+| 7.0 (this machine, 7.0.0-38) | builds |
+| 6.17 – 6.19 | builds |
+| 6.12 – 6.16 | builds |
+| 6.5 – 6.11 | **not supported yet** — needs a chanctx/`ieee80211_emulate_add_chanctx` shim |
+| 6.0 – 6.4 | **not supported** — no link API in mac80211; needs a different source tree |
+
+`src/compat.h` is force-included by the Kbuild and carries the shims, gated on
+`LINUX_VERSION_CODE`. It covers the 6.17 and 6.18 API breaks (typed allocators,
+`radio_idx`, `link_sta_rc_update`, `eht_mcs` masks, `debugfs_short_fops`,
+`WQ_PERCPU`, `ieee80211_gtk_rekey_add`). The `< 6.7` / `< 6.9` blocks are there
+for a future floor drop and are not exercised by the supported range.
+
+Verified by compiling the same tree against 6.12, 6.17 and 7.0.0-38 headers
+(4 modules, 0 errors each). Not verified on real hardware for any version.
+
 ## Build
 
 ```sh

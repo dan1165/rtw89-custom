@@ -232,9 +232,9 @@ static u64 rtw89_phy_ra_mask_cfg(struct rtw89_dev *rtwdev,
 	}
 
 	if (link_sta->eht_cap.has_eht) {
-		cfg_mask |= u64_encode_bits(mask->control[band].eht_mcs[0],
+		cfg_mask |= u64_encode_bits(rtw89_mask_eht_mcs(mask, band)[0],
 					    RA_MASK_EHT_1SS_RATES);
-		cfg_mask |= u64_encode_bits(mask->control[band].eht_mcs[1],
+		cfg_mask |= u64_encode_bits(rtw89_mask_eht_mcs(mask, band)[1],
 					    RA_MASK_EHT_2SS_RATES);
 	} else if (link_sta->he_cap.has_he) {
 		cfg_mask |= u64_encode_bits(mask->control[band].he_mcs[0],
@@ -296,8 +296,8 @@ static void rtw89_phy_ra_gi_ltf(struct rtw89_dev *rtwdev,
 		return;
 
 	if (link_sta->eht_cap.has_eht) {
-		ltf = mask->control[nl_band].eht_ltf;
-		gi = mask->control[nl_band].eht_gi;
+		ltf = rtw89_mask_eht_ltf(mask, nl_band);
+		gi = rtw89_mask_eht_gi(mask, nl_band);
 	} else if (link_sta->he_cap.has_he) {
 		ltf = mask->control[nl_band].he_ltf;
 		gi = mask->control[nl_band].he_gi;
@@ -633,7 +633,7 @@ void __rtw89_phy_rate_pattern_vif(struct rtw89_dev *rtwdev,
 	for (i = 0; i < tx_nss; i++)
 		if (!__check_rate_pattern(&next_pattern, hw_rate_eht[i][chip_gen],
 					  RA_MASK_EHT_RATES, RTW89_RA_MODE_EHT,
-					  mask->control[nl_band].eht_mcs[i],
+					  rtw89_mask_eht_mcs(mask, nl_band)[i],
 					  0, true))
 			goto out;
 

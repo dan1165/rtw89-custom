@@ -1951,12 +1951,48 @@ static void rtw89_ops_rfkill_poll(struct ieee80211_hw *hw)
 	rtw89_core_rfkill_poll(rtwdev, false);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+/* 6.17 added a radio_idx to these and renamed sta_rc_update to link_sta_rc_update.
+ * Single-link is all these kernels can express anyway.
+ */
+static int rtw89_compat_config(struct ieee80211_hw *hw, u32 changed)
+{
+	return rtw89_ops_config(hw, 0, changed);
+}
+
+static int rtw89_compat_set_rts_threshold(struct ieee80211_hw *hw, u32 v)
+{
+	return rtw89_ops_set_rts_threshold(hw, 0, v);
+}
+
+static int rtw89_compat_set_antenna(struct ieee80211_hw *hw, u32 tx, u32 rx)
+{
+	return rtw89_ops_set_antenna(hw, 0, tx, rx);
+}
+
+static int rtw89_compat_get_antenna(struct ieee80211_hw *hw, u32 *tx, u32 *rx)
+{
+	return rtw89_ops_get_antenna(hw, 0, tx, rx);
+}
+
+static void rtw89_compat_sta_rc_update(struct ieee80211_hw *hw,
+				       struct ieee80211_vif *vif,
+				       struct ieee80211_sta *sta, u32 changed)
+{
+	rtw89_ops_sta_rc_update(hw, vif, sta->link[0], changed);
+}
+#endif
+
 const struct ieee80211_ops rtw89_ops = {
 	.tx			= rtw89_ops_tx,
 	.wake_tx_queue		= rtw89_ops_wake_tx_queue,
 	.start			= rtw89_ops_start,
 	.stop			= rtw89_ops_stop,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+	.config			= rtw89_compat_config,
+#else
 	.config			= rtw89_ops_config,
+#endif
 	.add_interface		= rtw89_ops_add_interface,
 	.change_interface       = rtw89_ops_change_interface,
 	.remove_interface	= rtw89_ops_remove_interface,
@@ -1971,12 +2007,21 @@ const struct ieee80211_ops rtw89_ops = {
 	.set_key		= rtw89_ops_set_key,
 	.ampdu_action		= rtw89_ops_ampdu_action,
 	.get_survey		= rtw89_ops_get_survey,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+	.set_rts_threshold	= rtw89_compat_set_rts_threshold,
+#else
 	.set_rts_threshold	= rtw89_ops_set_rts_threshold,
+#endif
 	.sta_statistics		= rtw89_ops_sta_statistics,
 	.flush			= rtw89_ops_flush,
 	.set_bitrate_mask	= rtw89_ops_set_bitrate_mask,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+	.set_antenna		= rtw89_compat_set_antenna,
+	.get_antenna		= rtw89_compat_get_antenna,
+#else
 	.set_antenna		= rtw89_ops_set_antenna,
 	.get_antenna		= rtw89_ops_get_antenna,
+#endif
 	.sw_scan_start		= rtw89_ops_sw_scan_start,
 	.sw_scan_complete	= rtw89_ops_sw_scan_complete,
 	.reconfig_complete	= rtw89_ops_reconfig_complete,
@@ -1992,7 +2037,11 @@ const struct ieee80211_ops rtw89_ops = {
 	.remain_on_channel		= rtw89_ops_remain_on_channel,
 	.cancel_remain_on_channel	= rtw89_ops_cancel_remain_on_channel,
 	.set_sar_specs		= rtw89_ops_set_sar_specs,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+	.sta_rc_update		= rtw89_compat_sta_rc_update,
+#else
 	.link_sta_rc_update	= rtw89_ops_sta_rc_update,
+#endif
 	.set_tid_config		= rtw89_ops_set_tid_config,
 	.can_activate_links	= rtw89_ops_can_activate_links,
 	.change_vif_links	= rtw89_ops_change_vif_links,
